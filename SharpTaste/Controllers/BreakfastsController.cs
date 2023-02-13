@@ -19,15 +19,14 @@ namespace SharpTaste.Controllers
         [HttpPost]
         public IActionResult CreateBreakfastRequest(CreateBreakfastRequest request)
         {
-            var breakfast = new Breakfast(
-                Guid.NewGuid(),
-                request.Name,
-                request.Description,
-                request.StartDateTime,
-                request.EndDateTime,
-                DateTime.UtcNow,
-                request.Savory,
-                request.Sweet);
+            ErrorOr<Breakfast> requestToBreakfastResult = Breakfast.From(request);
+
+            if (requestToBreakfastResult.IsError)
+            {
+                return Problem(requestToBreakfastResult.Errors);
+            }
+
+            var breakfast = requestToBreakfastResult.Value;
 
             // TODO save to db
             ErrorOr<Created> createBreakfastResult = _breakfastService.CreateBreakfast(breakfast);
@@ -49,30 +48,19 @@ namespace SharpTaste.Controllers
             return getBreakfastResult.Match(
                 breakfast => Ok(MapBreakfastResponse(breakfast)),
                 errors => Problem(errors));
-
-            //if (getBreakfastResult.IsError && getBreakfastResult.FirstError == Errors.Breakfast.NotFound)
-            //{
-            //    return NotFound();
-            //}
-
-            //var breakfast = getBreakfastResult.Value;
-
-            //BreakfastResponse response = MapBreakfastResponse(breakfast);
-
-            //return Ok(response);
         }
 
         [HttpPut("{id:guid}")]
         public IActionResult UpsertBreakfast(Guid id, UpsertBreakfastRequest request)
         {
-            var breakfast = new Breakfast(id,
-                request.Name,
-                request.Description,
-                request.StartDateTime,
-                request.EndDateTime,
-                DateTime.UtcNow,
-                request.Savory,
-                request.Sweet);
+            ErrorOr<Breakfast> requestBreakfastResult = Breakfast.From(id, request);
+
+            if (requestBreakfastResult.IsError)
+            {
+                return Problem(requestBreakfastResult.Errors);
+            }
+
+            var breakfast = requestBreakfastResult.Value;
 
             ErrorOr<UpsertedBreakfast> upsertBreakfastResult = _breakfastService.UpsertBreakfast(breakfast);
 
